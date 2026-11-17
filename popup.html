@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <title>Twitch Chat en YouTube</title>
+  <link rel="stylesheet" href="popup.css">
+</head>
+<body>
+  <header>
+    <img src="icons/icon32.png" alt="" width="20" height="20">
+    <h1>Twitch Chat en YouTube</h1>
+    <label class="switch" title="Activar / desactivar">
+      <input type="checkbox" id="enabled">
+      <span></span>
+    </label>
+  </header>
+
+  <section id="current">
+    <p id="status" class="muted">Abre un directo de YouTube para configurarlo.</p>
+
+    <div id="form" hidden>
+      <label for="twitch">Canal de Twitch</label>
+      <input id="twitch" type="text" placeholder="nombre o enlace de twitch.tv" autocomplete="off" spellcheck="false">
+      <p id="error" class="error" hidden>Nombre de canal no válido.</p>
+      <div class="buttons">
+        <button id="save" class="primary">Guardar para este canal</button>
+        <button id="once">Solo este directo</button>
+      </div>
+      <button id="remove" class="link" hidden>Quitar asociación de este canal</button>
+    </div>
+  </section>
+
+  <section>
+    <label for="mode">Modo</label>
+    <select id="mode">
+      <option value="tabs">Pestañas (Twitch / YouTube)</option>
+      <option value="stack">Ambos chats, uno encima del otro</option>
+      <option value="replace">Sustituir el chat de YouTube</option>
+    </select>
+  </section>
+
+  <section>
+    <h2>Canales guardados</h2>
+    <ul id="list"></ul>
+    <p id="empty" class="muted">Ninguno todavía.</p>
+  </section>
+
+  <script src="popup.js"></script>
+</body>
+</html>
