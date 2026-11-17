@@ -3,6 +3,8 @@
 Extensión de Chrome (Manifest V3) que muestra el chat de Twitch dentro de los directos de YouTube.
 El código es corto y se puede revisar en unos minutos.
 
+![Chat de Twitch junto a un directo de YouTube](docs/captura.png)
+
 ## Qué hace (y qué no)
 
 - Inserta el **chat embebido oficial de Twitch** (`https://www.twitch.tv/embed/<canal>/chat`) junto al chat de YouTube.
