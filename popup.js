@@ -1,6 +1,6 @@
 "use strict";
 
-const DEFAULTS = { mappings: {}, mode: "tabs", height: 600, enabled: true };
+const DEFAULTS = { mappings: {}, mode: "tabs", customHeight: null, enabled: true };
 const TWITCH_RE = /^[a-zA-Z0-9_]{2,25}$/;
 const $ = (id) => document.getElementById(id);
 
@@ -124,11 +124,16 @@ async function init() {
   settings = await chrome.storage.sync.get(DEFAULTS);
   $("enabled").checked = settings.enabled;
   $("mode").value = settings.mode;
+  $("resetHeight").hidden = !settings.customHeight;
   renderList();
   await refreshCurrent();
 
   $("enabled").addEventListener("change", (e) => chrome.storage.sync.set({ enabled: e.target.checked }));
   $("mode").addEventListener("change", (e) => chrome.storage.sync.set({ mode: e.target.value }));
+  $("resetHeight").addEventListener("click", async () => {
+    await chrome.storage.sync.set({ customHeight: null });
+    $("resetHeight").hidden = true;
+  });
   $("save").addEventListener("click", () => save(false));
   $("once").addEventListener("click", () => save(true));
   $("twitch").addEventListener("keydown", (e) => {

@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Twitch Chat en YouTube",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "description": "Muestra el chat de Twitch dentro de los directos de YouTube. Sin rastreo, sin servidores externos.",
   "permissions": ["storage"],
   "content_scripts": [

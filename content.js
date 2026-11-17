@@ -5,7 +5,10 @@
   "use strict";
 
   const PANEL_ID = "tcy-panel";
-  const DEFAULTS = { mappings: {}, mode: "tabs", height: 600, enabled: true };
+  // customHeight: altura elegida arrastrando el tirador (null = igualar al chat de YouTube)
+  const DEFAULTS = { mappings: {}, mode: "tabs", customHeight: null, enabled: true };
+  const FALLBACK_HEIGHT = 600;
+  const MIN_HEIGHT = 250;
 
   let settings = { ...DEFAULTS };
   let override = null;        // canal de Twitch puesto "solo para este directo"
@@ -118,22 +121,12 @@
     iframe.title = "Chat de Twitch";
     iframe.setAttribute("allow", "clipboard-write");
 
-    panel.append(bar, iframe);
-    panel.style.height = `${settings.height}px`;
+    const grip = document.createElement("div");
+    grip.className = "tcy-grip";
+    grip.title = "Arrastra para cambiar la altura · doble clic para igualarla al chat de YouTube";
 
-    // Guardar la altura cuando el usuario redimensiona el panel
-    let t;
-    new ResizeObserver(() => {
-      if (panel.classList.contains("tcy-collapsed") || panel.classList.contains("tcy-matched")) return;
-      clearTimeout(t);
-      t = setTimeout(() => {
-        const h = Math.round(panel.getBoundingClientRect().height);
-        if (h >= 250 && Math.abs(h - settings.height) > 4) {
-          settings.height = h;
-          chrome.storage.sync.set({ height: h });
-        }
-      }, 500);
-    }).observe(panel);
+    panel.append(bar, iframe, grip);
+    setupGrip(panel, grip);
 
     setChannel(panel, channel);
     return panel;
@@ -173,23 +166,68 @@
     applyHeight(panel, ytChat, showTwitch);
   }
 
-  // Iguala la altura del chat de Twitch a la del chat de YouTube.
-  // Si no hay chat de YouTube (o está plegado), usa la altura guardada.
-  function applyHeight(panel, ytChat, showTwitch) {
-    if (!showTwitch) return;
-    const iframe = panel.querySelector("iframe");
-    const ytH = ytChat ? Math.round(ytChat.getBoundingClientRect().height) : 0;
+  // Altura del panel: la elegida por el usuario o, si no hay, la misma que el chat de YouTube.
+  let dragging = false;
 
-    if (ytH >= 250) {
-      panel.classList.add("tcy-matched");
-      panel.style.height = "";
-      if (iframe.style.height !== `${ytH}px`) iframe.style.height = `${ytH}px`;
-      watchYouTubeChat(panel, ytChat);
+  function applyHeight(panel, ytChat, showTwitch) {
+    if (!showTwitch || dragging) return;
+    let h;
+    if (settings.customHeight) {
+      h = settings.customHeight;
     } else {
-      panel.classList.remove("tcy-matched");
-      iframe.style.height = "";
-      panel.style.height = `${settings.height}px`;
+      const ytH = ytChat ? Math.round(ytChat.getBoundingClientRect().height) : 0;
+      if (ytH >= MIN_HEIGHT) {
+        const bar = panel.querySelector(".tcy-bar");
+        const grip = panel.querySelector(".tcy-grip");
+        h = ytH + bar.offsetHeight + grip.offsetHeight + (panel.offsetHeight - panel.clientHeight);
+      } else {
+        h = FALLBACK_HEIGHT;
+      }
     }
+    if (ytChat) watchYouTubeChat(ytChat);
+    if (panel.style.height !== `${h}px`) panel.style.height = `${h}px`;
+  }
+
+  // Tirador propio: el redimensionado nativo de CSS falla cuando el ratón pasa sobre el iframe.
+  function setupGrip(panel, grip) {
+    let startY = 0;
+    let startH = 0;
+
+    grip.addEventListener("pointerdown", (e) => {
+      if (e.button !== 0) return;
+      e.preventDefault();
+      dragging = true;
+      startY = e.clientY;
+      startH = panel.getBoundingClientRect().height;
+      grip.setPointerCapture(e.pointerId);
+      panel.classList.add("tcy-dragging");
+    });
+
+    grip.addEventListener("pointermove", (e) => {
+      if (!dragging) return;
+      const h = Math.max(MIN_HEIGHT, Math.round(startH + e.clientY - startY));
+      panel.style.height = `${h}px`;
+    });
+
+    const end = (e) => {
+      if (!dragging) return;
+      dragging = false;
+      panel.classList.remove("tcy-dragging");
+      if (grip.hasPointerCapture(e.pointerId)) grip.releasePointerCapture(e.pointerId);
+      const h = Math.round(panel.getBoundingClientRect().height);
+      if (Math.abs(h - startH) > 2) {
+        settings.customHeight = h;
+        chrome.storage.sync.set({ customHeight: h });
+      }
+    };
+    grip.addEventListener("pointerup", end);
+    grip.addEventListener("pointercancel", end);
+
+    grip.addEventListener("dblclick", () => {
+      settings.customHeight = null;
+      chrome.storage.sync.set({ customHeight: null });
+      applyVisibility(panel);
+    });
   }
 
   // Reacciona al instante cuando YouTube cambia el tamaño de su chat
@@ -199,7 +237,7 @@
     const p = document.getElementById(PANEL_ID);
     if (p && observedChat) applyHeight(p, observedChat, !p.classList.contains("tcy-collapsed"));
   });
-  function watchYouTubeChat(panel, ytChat) {
+  function watchYouTubeChat(ytChat) {
     if (observedChat === ytChat) return;
     if (observedChat) chatResizeObserver.unobserve(observedChat);
     observedChat = ytChat;

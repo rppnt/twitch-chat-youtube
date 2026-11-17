@@ -10,7 +10,8 @@ El código es corto y se puede revisar en unos minutos.
 - Inserta el **chat embebido oficial de Twitch** (`https://www.twitch.tv/embed/<canal>/chat`) junto al chat de YouTube.
 - Guardas qué canal de Twitch corresponde a cada canal de YouTube; la próxima vez aparece solo.
 - Tres modos: pestañas (Twitch / YouTube), ambos apilados, o sustituir el chat de YouTube.
-- El panel se puede redimensionar arrastrando la esquina inferior; la altura se recuerda.
+- Por defecto el chat de Twitch mide lo mismo que el de YouTube. Puedes cambiar la altura arrastrando el tirador
+  del borde inferior (se recuerda); doble clic en el tirador para volver a igualarla.
 - Sigue el tema claro/oscuro de YouTube.
 
 Privacidad:
