@@ -13,6 +13,8 @@ El código es corto y se puede revisar en unos minutos.
 - Por defecto el chat de Twitch mide lo mismo que el de YouTube. Puedes cambiar la altura arrastrando el tirador
   del borde inferior (se recuerda); doble clic en el tirador para volver a igualarla.
 - Sigue el tema claro/oscuro de YouTube.
+- **Modo anónimo** (por canal): carga el chat sin tu cuenta de Twitch, en solo lectura. Útil, por ejemplo,
+  si tu cuenta está baneada en ese canal. Usa un iframe `credentialless` de Chrome, que no envía tus cookies.
 
 Privacidad:
 - Único permiso: `storage` (guardar tus asociaciones de canales en `chrome.storage.sync`).

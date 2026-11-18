@@ -47,6 +47,25 @@
   background: #9146ff;
 }
 
+#tcy-panel .tcy-anon {
+  display: none;
+  font-size: 11px;
+  font-weight: 500;
+  padding: 2px 8px;
+  border-radius: 10px;
+  border: 1px solid currentColor;
+  color: var(--yt-spec-text-secondary, #606060);
+  margin-left: 4px;
+}
+
+#tcy-panel.tcy-anonymous .tcy-anon {
+  display: inline-block;
+}
+
+html[dark] #tcy-panel .tcy-anon {
+  color: #aaa;
+}
+
 #tcy-panel .tcy-name {
   margin-left: auto;
   font-size: 12px;

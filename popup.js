@@ -1,6 +1,6 @@
 "use strict";
 
-const DEFAULTS = { mappings: {}, mode: "tabs", customHeight: null, enabled: true };
+const DEFAULTS = { mappings: {}, mode: "tabs", customHeight: null, enabled: true, anonymous: {} };
 const TWITCH_RE = /^[a-zA-Z0-9_]{2,25}$/;
 const $ = (id) => document.getElementById(id);
 
@@ -97,6 +97,8 @@ async function refreshCurrent() {
   const saved = info.ytChannel ? settings.mappings[info.ytChannel] : null;
   if (document.activeElement !== $("twitch")) $("twitch").value = info.override || saved || "";
   $("remove").hidden = !saved;
+  const current = normalizeTwitch($("twitch").value) || info.twitch;
+  $("anonymous").checked = !!(current && settings.anonymous[current]);
 }
 
 async function save(once) {
@@ -133,6 +135,21 @@ async function init() {
   $("resetHeight").addEventListener("click", async () => {
     await chrome.storage.sync.set({ customHeight: null });
     $("resetHeight").hidden = true;
+  });
+  $("anonymous").addEventListener("change", async (e) => {
+    const tw = normalizeTwitch($("twitch").value) || (info && info.twitch);
+    $("error").hidden = !!tw;
+    if (!tw) {
+      e.target.checked = false;
+      return;
+    }
+    if (e.target.checked) settings.anonymous[tw] = true;
+    else delete settings.anonymous[tw];
+    await chrome.storage.sync.set({ anonymous: settings.anonymous });
+  });
+  $("twitch").addEventListener("input", () => {
+    const tw = normalizeTwitch($("twitch").value);
+    $("anonymous").checked = !!(tw && settings.anonymous[tw]);
   });
   $("save").addEventListener("click", () => save(false));
   $("once").addEventListener("click", () => save(true));

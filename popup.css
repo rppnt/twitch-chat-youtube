@@ -70,3 +70,8 @@ li button { flex: none; padding: 2px 8px; }
 }
 .switch input:checked + span { background: var(--purple); }
 .switch input:checked + span::before { transform: translateX(14px); }
+
+.check { display: flex; gap: 8px; align-items: flex-start; font-weight: normal; margin-top: 10px; cursor: pointer; }
+.check input { margin: 2px 0 0; accent-color: var(--purple); }
+.check strong { display: block; }
+.check small { display: block; color: var(--muted); line-height: 1.3; }

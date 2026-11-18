@@ -6,7 +6,8 @@
 
   const PANEL_ID = "tcy-panel";
   // customHeight: altura elegida arrastrando el tirador (null = igualar al chat de YouTube)
-  const DEFAULTS = { mappings: {}, mode: "tabs", customHeight: null, enabled: true };
+  // anonymous: canales de Twitch en "modo anónimo" ({ canal: true })
+  const DEFAULTS = { mappings: {}, mode: "tabs", customHeight: null, enabled: true, anonymous: {} };
   const FALLBACK_HEIGHT = 600;
   const MIN_HEIGHT = 250;
 
@@ -108,7 +109,12 @@
     a.rel = "noopener noreferrer";
     name.appendChild(a);
 
-    bar.append(tabTwitch, tabYT, name);
+    const anon = document.createElement("span");
+    anon.className = "tcy-anon";
+    anon.textContent = "Anónimo";
+    anon.title = "Modo anónimo: el chat se carga sin tu cuenta de Twitch (solo lectura)";
+
+    bar.append(tabTwitch, tabYT, anon, name);
 
     bar.addEventListener("click", (e) => {
       const btn = e.target.closest(".tcy-tab");
@@ -117,9 +123,7 @@
       applyVisibility(panel);
     });
 
-    const iframe = document.createElement("iframe");
-    iframe.title = "Chat de Twitch";
-    iframe.setAttribute("allow", "clipboard-write");
+    const iframe = createChatFrame(false);
 
     const grip = document.createElement("div");
     grip.className = "tcy-grip";
@@ -132,9 +136,34 @@
     return panel;
   }
 
+  // Modo anónimo: iframe "credentialless". Chrome lo carga sin cookies ni almacenamiento
+  // de twitch.tv, así que Twitch lo trata como un visitante sin sesión (solo lectura).
+  function createChatFrame(anonymous) {
+    const iframe = document.createElement("iframe");
+    iframe.title = "Chat de Twitch";
+    iframe.setAttribute("allow", "clipboard-write");
+    if (anonymous) iframe.setAttribute("credentialless", "");
+    return iframe;
+  }
+
+  function isAnonymous(channel) {
+    return !!(settings.anonymous && settings.anonymous[channel]);
+  }
+
   function setChannel(panel, channel) {
     const src = chatSrc(channel);
-    const iframe = panel.querySelector("iframe");
+    const anonymous = isAnonymous(channel);
+    let iframe = panel.querySelector("iframe");
+
+    // El atributo credentialless solo se aplica al crear el iframe: si cambia, lo sustituimos.
+    if (iframe.hasAttribute("credentialless") !== anonymous) {
+      const fresh = createChatFrame(anonymous);
+      fresh.style.cssText = iframe.style.cssText;
+      iframe.replaceWith(fresh);
+      iframe = fresh;
+    }
+    panel.classList.toggle("tcy-anonymous", anonymous);
+
     if (iframe.dataset.src !== src) {
       iframe.dataset.src = src;
       iframe.src = src;
