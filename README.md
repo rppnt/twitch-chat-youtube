@@ -35,6 +35,8 @@ Privacidad:
 2. Pulsa el icono de la extensión, escribe el canal de Twitch (nombre o enlace `twitch.tv/...`).
 3. **Guardar para este canal** lo recuerda siempre; **Solo este directo** lo aplica solo a la página actual.
 
+<img src="docs/popup.png" alt="Ventana de configuración de la extensión" width="360">
+
 ## Notas
 
 - Para escribir en el chat tienes que tener la sesión iniciada en twitch.tv en el mismo navegador.
