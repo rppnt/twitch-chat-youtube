@@ -1,5 +1,6 @@
 /* Panel del chat de Twitch inyectado en YouTube */
 #tcy-panel {
+  position: relative;
   display: flex;
   flex-direction: column;
   box-sizing: border-box;
@@ -172,4 +173,75 @@ html[dark] #tcy-panel .tcy-tab.tcy-active {
 html[dark] #tcy-panel .tcy-tab[data-tab="twitch"].tcy-active {
   color: #fff;
   background: #9146ff;
+}
+
+/* ---------- Chat al lado del vídeo (pantalla completa / modo cine) ---------- */
+
+/* Tirador lateral para cambiar el ancho */
+#tcy-panel .tcy-wgrip {
+  display: none;
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  width: 8px;
+  cursor: ew-resize;
+  touch-action: none;
+  z-index: 2;
+}
+
+#tcy-panel .tcy-wgrip::before {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 2px;
+  width: 3px;
+  height: 36px;
+  margin-top: -18px;
+  border-radius: 2px;
+  background: rgba(128, 128, 128, 0.5);
+}
+
+#tcy-panel .tcy-wgrip:hover::before,
+#tcy-panel.tcy-dragging .tcy-wgrip::before {
+  background: #9146ff;
+}
+
+#tcy-panel.tcy-side .tcy-wgrip {
+  display: block;
+}
+
+/* Al lado del vídeo la altura la marca la pantalla: no hace falta el tirador inferior */
+#tcy-panel.tcy-side .tcy-grip {
+  display: none;
+}
+
+/* Cuando YouTube fija su chat a la derecha (position: fixed), colocamos el panel igual */
+ytd-watch-flexy[fixed-panels] #tcy-panel {
+  position: fixed;
+  top: var(--ytd-masthead-height-accounting-for-hidden, 0px);
+  right: 0;
+  bottom: 0;
+  width: var(--ytd-watch-flexy-sidebar-width);
+  height: auto !important;
+  margin: 0;
+  border-radius: 0;
+  border-top: 0;
+  border-right: 0;
+  border-bottom: 0;
+  z-index: 1;
+}
+
+ytd-watch-flexy[fixed-panels] #tcy-panel iframe {
+  flex: 1 1 auto;
+  height: auto;
+}
+
+ytd-watch-flexy[fixed-panels] #tcy-panel.tcy-collapsed {
+  bottom: auto;
+}
+
+/* Con la pestaña de YouTube activa, bajamos su chat para que no quede tapado por nuestra barra */
+ytd-watch-flexy[fixed-panels] #tcy-panel.tcy-collapsed + ytd-live-chat-frame#chat {
+  top: calc(var(--ytd-masthead-height-accounting-for-hidden, 0px) + var(--tcy-bar-height, 42px)) !important;
 }

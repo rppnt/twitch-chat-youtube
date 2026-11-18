@@ -12,6 +12,8 @@ El código es corto y se puede revisar en unos minutos.
 - Tres modos: pestañas (Twitch / YouTube), ambos apilados, o sustituir el chat de YouTube.
 - Por defecto el chat de Twitch mide lo mismo que el de YouTube. Puedes cambiar la altura arrastrando el tirador
   del borde inferior (se recuerda); doble clic en el tirador para volver a igualarla.
+- En pantalla completa y en modo cine, con el chat al lado del vídeo, puedes cambiar el **ancho** arrastrando
+  el borde izquierdo del panel; el vídeo se ajusta solo. Doble clic en ese borde para volver al ancho de YouTube.
 - Sigue el tema claro/oscuro de YouTube.
 - **Modo anónimo** (por canal): carga el chat sin tu cuenta de Twitch, en solo lectura. Útil, por ejemplo,
   si tu cuenta está baneada en ese canal. Usa un iframe `credentialless` de Chrome, que no envía tus cookies.

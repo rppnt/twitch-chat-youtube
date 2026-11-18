@@ -7,9 +7,12 @@
   const PANEL_ID = "tcy-panel";
   // customHeight: altura elegida arrastrando el tirador (null = igualar al chat de YouTube)
   // anonymous: canales de Twitch en "modo anónimo" ({ canal: true })
-  const DEFAULTS = { mappings: {}, mode: "tabs", customHeight: null, enabled: true, anonymous: {} };
+  // sideWidth: ancho del chat cuando va al lado del vídeo (pantalla completa / modo cine)
+  const DEFAULTS = { mappings: {}, mode: "tabs", customHeight: null, enabled: true, anonymous: {}, sideWidth: null };
   const FALLBACK_HEIGHT = 600;
   const MIN_HEIGHT = 250;
+  const MIN_SIDE_WIDTH = 280;
+  const MIN_PLAYER_WIDTH = 320;
 
   let settings = { ...DEFAULTS };
   let override = null;        // canal de Twitch puesto "solo para este directo"
@@ -79,6 +82,7 @@
   // ---------- panel ----------
 
   function removePanel() {
+    if (widthStyle && widthStyle.textContent) applySideWidth(null);
     const p = document.getElementById(PANEL_ID);
     if (p) p.remove();
     const yt = getYouTubeChat();
@@ -129,8 +133,13 @@
     grip.className = "tcy-grip";
     grip.title = "Arrastra para cambiar la altura · doble clic para igualarla al chat de YouTube";
 
-    panel.append(bar, iframe, grip);
+    const wgrip = document.createElement("div");
+    wgrip.className = "tcy-wgrip";
+    wgrip.title = "Arrastra para cambiar el ancho · doble clic para volver al ancho de YouTube";
+
+    panel.append(bar, iframe, grip, wgrip);
     setupGrip(panel, grip);
+    setupWidthGrip(panel, wgrip);
 
     setChannel(panel, channel);
     return panel;
@@ -173,9 +182,21 @@
     a.href = `https://www.twitch.tv/${encodeURIComponent(channel)}`;
   }
 
+  // ¿Está el chat al lado del vídeo? (pantalla completa o modo cine con el chat a la derecha)
+  function isSideLayout(panel) {
+    const flexy = document.querySelector("ytd-watch-flexy");
+    return !!(
+      (flexy && (flexy.hasAttribute("fixed-panels") || flexy.hasAttribute("fullscreen"))) ||
+      panel.closest("#panels-full-bleed-container")
+    );
+  }
+
   function applyVisibility(panel) {
     const ytChat = getYouTubeChat();
-    const tabsMode = settings.mode === "tabs" && ytChat;
+    const side = isSideLayout(panel);
+    panel.classList.toggle("tcy-side", side);
+    // Al lado del vídeo no caben dos chats apilados: el modo "ambos" se comporta como pestañas.
+    const tabsMode = (settings.mode === "tabs" || (settings.mode === "stack" && side)) && ytChat;
     const showTwitch = !tabsMode || activeTab === "twitch";
 
     panel.querySelector(".tcy-tab[data-tab='youtube']").style.display = tabsMode ? "" : "none";
@@ -192,6 +213,9 @@
       else ytChat.removeAttribute("data-tcy-hidden");
     }
 
+    const bar = panel.querySelector(".tcy-bar");
+    document.documentElement.style.setProperty("--tcy-bar-height", `${bar.offsetHeight}px`);
+
     applyHeight(panel, ytChat, showTwitch);
   }
 
@@ -201,7 +225,8 @@
   function applyHeight(panel, ytChat, showTwitch) {
     if (!showTwitch || dragging) return;
     let h;
-    if (settings.customHeight) {
+    const side = panel.classList.contains("tcy-side");
+    if (settings.customHeight && !side) {
       h = settings.customHeight;
     } else {
       const ytH = ytChat ? Math.round(ytChat.getBoundingClientRect().height) : 0;
@@ -259,6 +284,84 @@
     });
   }
 
+  // ---------- ancho al lado del vídeo ----------
+  // YouTube calcula el ancho del chat lateral con la variable --ytd-watch-flexy-sidebar-width,
+  // que reescribe en línea al redimensionar. Una regla !important de hoja de estilos gana a ese
+  // estilo en línea, y así el vídeo se estrecha a la vez que el chat se ensancha.
+  let widthStyle = null;
+
+  function applySideWidth(width) {
+    if (!widthStyle) {
+      widthStyle = document.createElement("style");
+      widthStyle.id = "tcy-width-style";
+      (document.head || document.documentElement).appendChild(widthStyle);
+    }
+    const css = width
+      ? `ytd-watch-flexy[fixed-panels], ytd-watch-flexy[fullscreen] {
+           --ytd-watch-flexy-sidebar-width: ${width}px !important;
+         }
+         ytd-watch-flexy[fullscreen] #panels-full-bleed-container {
+           width: ${width}px !important;
+         }`
+      : "";
+    if (widthStyle.textContent !== css) {
+      widthStyle.textContent = css;
+      // El reproductor recalcula el tamaño del vídeo al recibir un "resize"
+      window.dispatchEvent(new Event("resize"));
+    }
+  }
+
+  function clampSideWidth(w) {
+    const max = Math.max(MIN_SIDE_WIDTH, window.innerWidth - MIN_PLAYER_WIDTH);
+    return Math.round(Math.min(max, Math.max(MIN_SIDE_WIDTH, w)));
+  }
+
+  function setupWidthGrip(panel, grip) {
+    let active = false;
+    let frame = 0;
+    let pending = null;
+
+    grip.addEventListener("pointerdown", (e) => {
+      if (e.button !== 0) return;
+      e.preventDefault();
+      active = true;
+      grip.setPointerCapture(e.pointerId);
+      panel.classList.add("tcy-dragging");
+    });
+
+    grip.addEventListener("pointermove", (e) => {
+      if (!active) return;
+      const right = panel.getBoundingClientRect().right;
+      pending = clampSideWidth(right - e.clientX);
+      if (!frame) {
+        frame = requestAnimationFrame(() => {
+          frame = 0;
+          applySideWidth(pending);
+        });
+      }
+    });
+
+    const end = (e) => {
+      if (!active) return;
+      active = false;
+      panel.classList.remove("tcy-dragging");
+      if (grip.hasPointerCapture(e.pointerId)) grip.releasePointerCapture(e.pointerId);
+      if (pending) {
+        settings.sideWidth = pending;
+        chrome.storage.sync.set({ sideWidth: pending });
+      }
+    };
+    grip.addEventListener("pointerup", end);
+    grip.addEventListener("pointercancel", end);
+
+    grip.addEventListener("dblclick", () => {
+      pending = null;
+      settings.sideWidth = null;
+      chrome.storage.sync.set({ sideWidth: null });
+      applySideWidth(null);
+    });
+  }
+
   // Reacciona al instante cuando YouTube cambia el tamaño de su chat
   // (redimensionar ventana, modo cine, plegar/desplegar el chat...).
   let observedChat = null;
@@ -290,6 +393,8 @@
       before = parent ? parent.firstElementChild : null;
     }
     if (!parent) return; // la página aún no ha cargado
+
+    applySideWidth(settings.sideWidth);
 
     let panel = document.getElementById(PANEL_ID);
     if (!panel) {
